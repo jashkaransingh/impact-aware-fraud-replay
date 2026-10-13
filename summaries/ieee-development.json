@@ -1,0 +1,35 @@
+{
+  "dataset": "IEEE-CIS train_transaction.csv",
+  "source_sha256": "3a5c83ab6b3cc13dcabe5ffa9f522307fd5f7f7b6e6f6a60c32284ca6283d642",
+  "source_rows": 590540,
+  "development_rows": 380815,
+  "seed": 501,
+  "historical_windows": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "mean_final_historical_ap_no_replay": 0.18967038237226122,
+  "mean_final_historical_ap_balanced_replay": 0.1928212607158643,
+  "mean_best_to_final_ap_loss_no_replay": 0.035237195504958005,
+  "mean_best_to_final_ap_loss_balanced_replay": 0.031240903498419632,
+  "window_6_ap_no_replay": 0.18501329133797909,
+  "window_6_ap_balanced_replay": 0.1847645970780516,
+  "verification": {
+    "historical_training_ids_only": true,
+    "held_out_ids_excluded": true,
+    "retrieval_ids_unique_per_epoch": true,
+    "memory_ids_unique": true,
+    "memory_limit_256_and_128_per_class": true,
+    "retrieval_limit_128_and_64_per_class": true,
+    "retrieval_class_targets_match_available_memory": true,
+    "current_rows_and_optimizer_steps_match_baseline": true,
+    "window_1_exact_baseline_match": true,
+    "maximum_memory_rows": 256,
+    "maximum_retrieved_rows_per_epoch": 128,
+    "retrieval_epoch_records": 18
+  },
+  "scope": "development partition only; one seed; fixed class-balanced random replay, not impact-aware replay"
+}

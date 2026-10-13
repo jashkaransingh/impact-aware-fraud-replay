@@ -1,0 +1,5 @@
+{
+  "repository": "https://raw.githubusercontent.com/Fraud-Detection-Handbook/fraud-detection-handbook/81cf7d1714bb7b2f5b496407d9055d91dc68dc25/",
+  "commit": "81cf7d1714bb7b2f5b496407d9055d91dc68dc25",
+  "derivation": "function definitions extracted unchanged via AST; imports added; notebook demonstrations omitted"
+}

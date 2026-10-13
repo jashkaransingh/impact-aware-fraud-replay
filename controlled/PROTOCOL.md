@@ -1,0 +1,27 @@
+# Controlled validation protocol (declared before running)
+
+This is a separate synthetic mechanism test, not a modification of the Handbook data and not a claim of realistic credit-card fraud. No published data or verified result is altered.
+
+Two contexts A and B produce Gaussian feature vectors. In A, legitimate records cluster at (-2,+2) and fraud at (+2,+2). In B, legitimate records cluster at (+2,-2) and fraud at (-2,-2). Two additional nuisance features are independent Gaussian noise. The latent rule is consistent: matching signs indicate fraud. Labels are fixed at generation; examples are never relabeled when the context changes. Feature noise creates ordinary class overlap. A single hidden-layer MLP can represent both contexts; a joint-training control checks capacity. This design creates a changing shortcut (first feature's sign) without logically contradictory labels for identical inputs.
+
+Schedule: three A windows, three B windows, then three new A windows. Each contains 2,000 independent records with exactly 5% fraud. Model: 4 inputs, 16 hidden units, ReLU, SGD learning rate .03, five epochs/window, batch size 128, positive BCE weight 19. No architecture/hyperparameter search is planned. Fixed held-out sets of 4,000 independent examples per domain allow retention evaluation. Validation seeds 101 and 102; later final seeds must be disjoint.
+
+Feasibility gates, before a policy comparison: initial A AP at least .80; A AP drop after the B phase at least .10 in each validation seed; final B-phase AP at least .80; a joint-training model reaches at least .90 mean AP across both domains. If a gate fails, retain the failure and revise the stress design explicitly using validation only. Do not select a protocol based on combined-policy success. No superiority hypothesis is required to pass this gate.
+
+The reusable replay store holds 256 historical records with half its capacity per class, the same admission for every replay policy. Historical retrieval is at most 128 unique examples/epoch with half positive; same current-data order and optimizer-step count. At most 640 presentations/window. No replay is a zero-history control. Scoring initially uses the existing positive-loss-increase signal and configurable alpha=.5 combination; no method-specific tuning.
+
+Amounts are lognormal and do not determine labels. Primary control: same independent amount distribution in both contexts. Prespecified impact asymmetry checks (if feasibility succeeds): multiply fraudulent A amounts by ten, and separately multiply fraudulent B amounts by ten, retaining the same feature/label realizations. Amount is excluded from model inputs. This makes operational importance available only to replay selection and evaluation, not an artificial label shortcut. These are explicit impact proxies, not measured losses. The mirrored assignments check whether results merely favor one phase order.
+
+Primary forgetting endpoint: A AP at the end of A phase minus A AP at the end of B phase. Also report old-domain amount recall at a fixed 5% review budget, current B AP, A recovery on return, and B forgetting after A returns. Accuracy is secondary. Evaluating before B is learned is diagnostic, not counted as forgetting. The test archive is unavailable to training/retrieval. Report all seeds and policies, not just favorable aggregates.
+
+## Freeze after feasibility validation, before held-out comparisons
+
+Both validation seeds passed all gates with no learning-parameter changes. No replay's A AP dropped by 0.9697 and 0.9620 after B; current B AP remained above .996. Joint AP exceeded .98 for both contexts. Random replay reduced those A drops to .0968 and .1469. These are validation results, not final test results.
+
+Freeze: seeds 201–205; all five policies; same schedule/model/training/budget. Three prespecified amount assignments: independent (lognormal median 50), A-high (multiply A fraud amounts by 10), B-high (multiply B fraud amounts by 10). Multipliers do not affect features or labels; no amount enters the classifier. The mirrored assignment tests whether an apparent gain is tied to the first context. Impact normalization is smooth `log(1+a)/(log(1+a)+s)`, with s the initial training median log amount, avoiding clipping saturation. Forgetting proxy and combination alpha=.5 are unchanged. No test-result-based hyperparameter changes are permitted in this round.
+
+Report all 75 runs plus a repeated combined independent seed 201. Domain-specific retention and a pooled A+B evaluation at a fixed global 5% review budget are both included. Pooled measurements use equal-size held-out domains; real prevalence/cost composition is not assumed. The five seeds jointly vary training/evaluation data and initialization; they are not five repeats on one fixed test set. The capacity control is unconstrained and not a memory-budget-matched competitor.
+
+## Smaller-budget robustness check (declared after main test, before new runs)
+
+A separate exploratory robustness check uses fresh seeds 301–305 with 64 memory slots and 32 replay records per epoch. All other learning, data and scoring parameters remain fixed; all five policies and all three amount assignments are included. This varies memory and retrieval budgets together, so it cannot identify their separate causal effects. It is not an alpha search and will not replace the primary 256/128-budget experiment. A seed-103 validation smoke run precedes the suite. The same completeness, split, eligibility and fixed-budget checks apply.

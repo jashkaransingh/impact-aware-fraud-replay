@@ -1,0 +1,54 @@
+--- upstream/main.py
++++ audited/main.py
+@@ -22,10 +22,10 @@
+         loss_sum = 0
+         for i in shuffled_list:
+             optimizer.zero_grad()
+-            loss = model([contrast_dataset[i * 2 + 1][0].to(device),
+-                          contrast_dataset[i * 2][0].to(device)],
+-                         [contrast_dataset[i * 2 + 1][1].to(device),
+-                          contrast_dataset[i * 2][1].to(device)
++            loss = model([contrast_dataset[i * 2][0].to(device),
++                          contrast_dataset[i * 2 + 1][0].to(device)],
++                         [contrast_dataset[i * 2][1].to(device),
++                          contrast_dataset[i * 2 + 1][1].to(device)
+                           ], None, True)
+             loss.backward()
+             optimizer.step()
+@@ -60,6 +60,7 @@
+             loss = iterate_offline_model(data_now, edge_now, y_now, optimizer)
+             loss_sum += loss
+         print("Offline Epoch:", j, "Loss:", loss_sum)
++    return pretrain_data[:pretrain_date]
+ 
+ 
+ pretrain_days = 14
+--- upstream/models.py
++++ audited/models.py
+@@ -12,7 +12,7 @@
+     def forward(self, x, edge_index):
+         x = self.conv1(x, edge_index)
+         x = F.relu(x)
+-        x = F.dropout(x,p=0.5)
++        x = F.dropout(x,p=0.5,training=self.training)
+         x = self.conv2(x, edge_index)
+         return x
+ 
+@@ -124,7 +124,7 @@
+             overall_importance[n] = p.clone().detach().fill_(0) 
+             for i in range(len(self.history_importance)):
+                 if self.history_importance[i]:
+-                    overall_importance[n] += m * overall_importance[n] + (1-m) * self.history_importance[i][n]
++                    overall_importance[n] = m * overall_importance[n] + (1-m) * self.history_importance[i][n]
+ 
+         min_p = min(p.min().item() for p in overall_importance.values())
+         max_p = max(p.max().item() for p in overall_importance.values())
+@@ -183,7 +183,7 @@
+     def forward(self,x,edge_index):
+         x=self.gat1(x,edge_index)
+         x=F.relu(x)
+-        x=F.dropout(x,p=0.5)
++        x=F.dropout(x,p=0.5,training=self.training)
+         # x=self.gat2(x,edge_index)
+         x=self.linear(x)
+         return x

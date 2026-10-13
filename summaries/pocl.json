@@ -1,0 +1,9 @@
+{
+  "run": "released POCL code, full released schedule, seed 17",
+  "online_days": 350,
+  "mean_daily_auc": 0.8165272276774411,
+  "mean_daily_f1": 0.6478584014433935,
+  "mean_daily_accuracy": 0.7728356290882141,
+  "identical_daily_metrics_on_repeat": true,
+  "source": "results/pocl-full-repeat/metrics.json; results/verification.json"
+}
