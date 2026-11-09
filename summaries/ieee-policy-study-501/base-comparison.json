@@ -1,0 +1,116 @@
+{
+  "metrics_definition": "Final mean historical windows 1-5; current window 6; forgetting mean best-to-final AP on 1-5; amount recall at fixed 5% quota. Unweighted window means.",
+  "rows": [
+    {
+      "method": "no-replay",
+      "historical_ap": 0.18967038237226122,
+      "current_window_ap": 0.18501329133797909,
+      "forgetting": 0.035237195504958005,
+      "historical_amount_recall_5pct": 0.22296789736008452,
+      "current_amount_recall_5pct": 0.19131365507345313,
+      "historical_fraud_recall_5pct": 0.32399036868925857,
+      "mean_diagonal_ap": 0.21268444786852256
+    },
+    {
+      "method": "random",
+      "historical_ap": 0.1928212607158643,
+      "current_window_ap": 0.1847645970780516,
+      "forgetting": 0.031240903498419632,
+      "historical_amount_recall_5pct": 0.22118120156019466,
+      "current_amount_recall_5pct": 0.19469268124191993,
+      "historical_fraud_recall_5pct": 0.3266071388815671,
+      "mean_diagonal_ap": 0.21267461266187238
+    },
+    {
+      "method": "forgetting",
+      "historical_ap": 0.1951424948789238,
+      "current_window_ap": 0.18803353561327707,
+      "forgetting": 0.03221670619352699,
+      "historical_amount_recall_5pct": 0.21367130125254982,
+      "current_amount_recall_5pct": 0.19099815190246372,
+      "historical_fraud_recall_5pct": 0.3225599810998118,
+      "mean_diagonal_ap": 0.2152288908182506
+    },
+    {
+      "method": "impact",
+      "historical_ap": 0.18970660553721194,
+      "current_window_ap": 0.18534228086238733,
+      "forgetting": 0.033045170446969724,
+      "historical_amount_recall_5pct": 0.21417287719277636,
+      "current_amount_recall_5pct": 0.18792035690396722,
+      "historical_fraud_recall_5pct": 0.31974148359554927,
+      "mean_diagonal_ap": 0.21196829865341607
+    },
+    {
+      "method": "combined",
+      "historical_ap": 0.19412203281325588,
+      "current_window_ap": 0.18662671828625751,
+      "forgetting": 0.030484366048049855,
+      "historical_amount_recall_5pct": 0.21455559183691317,
+      "current_amount_recall_5pct": 0.19997000347871693,
+      "historical_fraud_recall_5pct": 0.32067136785877964,
+      "mean_diagonal_ap": 0.21355241981188752
+    }
+  ],
+  "audits": {
+    "random-reproduction": {
+      "results.json": true,
+      "replay-ids.json": true,
+      "smoke-check.json": true,
+      "versions": true,
+      "seed": true,
+      "input_width": true,
+      "positive_weight": true,
+      "batch_size_current_examples": true,
+      "epochs_per_window": true,
+      "learning_rate": true,
+      "source_sha256_from_preparation": true
+    },
+    "random-reproduction-run": {
+      "same_reservoir_ids": true,
+      "same_exposure_steps_budget_versions": true,
+      "runner_training_membership_checks_passed": true,
+      "window_1_exact": true
+    },
+    "forgetting": {
+      "same_reservoir_ids": true,
+      "same_exposure_steps_budget_versions": true,
+      "runner_training_membership_checks_passed": true,
+      "window_1_exact": true
+    },
+    "impact": {
+      "same_reservoir_ids": true,
+      "same_exposure_steps_budget_versions": true,
+      "runner_training_membership_checks_passed": true,
+      "window_1_exact": true
+    },
+    "combined": {
+      "same_reservoir_ids": true,
+      "same_exposure_steps_budget_versions": true,
+      "runner_training_membership_checks_passed": true,
+      "window_1_exact": true
+    }
+  },
+  "provenance": {
+    "no-replay": {
+      "path": "/Users/jas/Downloads/impact-replay/results/ieee-no-replay-baseline-501",
+      "results_sha256": "6ea3ee1d15eb29f05274a0488cdedaef78d1369510894472176c08b498b44054"
+    },
+    "random": {
+      "path": "/Users/jas/Downloads/impact-replay/results/ieee-class-balanced-replay-501",
+      "results_sha256": "a8af3f92ecb0901bbb42f5091bbee61b0772486f5ea5f470fcb1ae62fe406c0c"
+    },
+    "forgetting": {
+      "path": "/Users/jas/Downloads/impact-replay/results/ieee-policy-study-501/forgetting",
+      "results_sha256": "e6a76c7fc9e98cd4a141375961a8df2cd81103f0e6f7d1359e161a00cf114d3f"
+    },
+    "impact": {
+      "path": "/Users/jas/Downloads/impact-replay/results/ieee-policy-study-501/impact",
+      "results_sha256": "1958cadaa9bad2655c5707fb68a1dfb6b17e91d33abaca9eab5645f0d8dd1426"
+    },
+    "combined": {
+      "path": "/Users/jas/Downloads/impact-replay/results/ieee-policy-study-501/combined",
+      "results_sha256": "a97b29e3859edf67345eece55b8d3d9b478a7ba778e062cf7164e00678bc2a91"
+    }
+  }
+}
