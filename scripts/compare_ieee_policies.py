@@ -39,6 +39,37 @@ def summarize(results):
     }
 
 
+def per_window(results):
+    rows = []
+    for window in range(1, 7):
+        trajectory = [next(m for m in step['held_out_evaluations'] if m['held_out_window'] == window)
+                      for step in results[window-1:]]
+        final = trajectory[-1]
+        best = max(m['ap'] for m in trajectory)
+        rows.append({'held_out_window': window, 'initial_ap': trajectory[0]['ap'],
+                     'final_ap': final['ap'], 'best_ap': best, 'forgetting': best-final['ap'],
+                     'final_amount_recall_5pct': final['amount_weighted_fraud_recall_at_5pct'],
+                     'final_fraud_recall_5pct': final['fraud_recall_at_5pct']})
+    return rows
+
+
+def plot_windows(windows, output):
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+    for name, rows in windows.items():
+        for ax, key in zip(axes, ('final_ap', 'final_amount_recall_5pct')):
+            ax.plot(range(1, 7), [r[key] for r in rows], marker='o', label=name)
+    for ax, title in zip(axes, ('Final AP', 'Final fraud amount recall at 5% review')):
+        ax.set(title=title, xlabel='Held-out development window', xticks=range(1, 7))
+        ax.grid(alpha=.25)
+    axes[1].legend(fontsize=8)
+    fig.tight_layout()
+    fig.savefig(output / 'final-performance.png', dpi=160)
+    plt.close(fig)
+
+
 def verify_random(candidate):
     checks = {name: read(candidate / name) == read(RANDOM / name)
               for name in ('results.json', 'replay-ids.json', 'smoke-check.json')}
@@ -71,6 +102,21 @@ def audit_run(path, baseline_results, anchor_log):
         if result['training_rows'] != base['training_rows']:
             raise AssertionError('Current exposure differs')
     for record, reference in zip(log['retrievals'], anchor_log['retrievals']):
+        window = record['training_window']
+        pools = ({'0': [], '1': []} if window == 1 else
+                 log['memory_snapshots'][window-2]['slots_by_class'])
+        prior = {item['transaction_id']: (int(label), item['source_window'])
+                 for label, pool in pools.items() for item in pool}
+        ids = [item['transaction_id'] for item in record['retrieved']]
+        if len(ids) != len(set(ids)):
+            raise AssertionError('Duplicate retrieval ID')
+        for item in record['retrieved']:
+            if prior.get(item['transaction_id']) != (item['class'], item['source_window']):
+                raise AssertionError('Retrieved ID is outside prior reservoir or has wrong class/source')
+        for label in (0, 1):
+            count = sum(item['class'] == label for item in record['retrieved'])
+            if count != min(64, len(pools[str(label)])):
+                raise AssertionError('Class retrieval quota changed')
         for key in ('training_window', 'epoch', 'current_rows_exposed', 'optimizer_steps'):
             if record[key] != reference[key]:
                 raise AssertionError(f'{key} differs')
@@ -103,15 +149,18 @@ def main():
     audits['random-reproduction-run'] = audit_run(args.random_reproduction, base, anchor)
     rows = []
     provenance = {}
+    windows = {}
     for name, path in paths.items():
         if name not in ('no-replay', 'random'):
             audits[name] = audit_run(path, base, anchor)
-        rows.append({'method': name, **summarize(read(path / 'results.json'))})
+        method_results = read(path / 'results.json')
+        rows.append({'method': name, **summarize(method_results)})
+        windows[name] = per_window(method_results)
         provenance[name] = {'path': str(path.resolve()),
                             'results_sha256': hashlib.sha256((path / 'results.json').read_bytes()).hexdigest()}
     args.output.mkdir(parents=True, exist_ok=False)
     report = {'metrics_definition': 'Final mean historical windows 1-5; current window 6; forgetting mean best-to-final AP on 1-5; amount recall at fixed 5% quota. Unweighted window means.',
-              'rows': rows, 'audits': audits, 'provenance': provenance}
+              'rows': rows, 'audits': audits, 'provenance': provenance, 'per_window': windows}
     (args.output / 'comparison.json').write_text(json.dumps(report, indent=2) + '\n')
     with (args.output / 'comparison.csv').open('w') as stream:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
@@ -121,6 +170,7 @@ def main():
     lines = ['| ' + ' | '.join(columns) + ' |', '| ' + ' | '.join(['---'] * len(columns)) + ' |']
     lines += ['| ' + ' | '.join(str(row[k]) if k == 'method' else f'{row[k]:.6f}' for k in columns) + ' |' for row in rows]
     (args.output / 'comparison.md').write_text(report['metrics_definition'] + '\n\n' + '\n'.join(lines) + '\n')
+    plot_windows(windows, args.output)
     print('\n'.join(lines))
 
 

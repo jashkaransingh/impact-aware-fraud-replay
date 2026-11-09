@@ -1,0 +1,96 @@
+{
+  "scope": "Development only; three prespecified candidates; reserved evaluation unused",
+  "base_git_commit": "9483bd3ea293d31220c4434ffd5184ca2a57fde5",
+  "source_sha256": {
+    "scripts/run_ieee_balanced_replay.py": "fa342fd6d76a55d470e8a439128f68e74cb7e796045c5605117e5e93aa2a4517",
+    "scripts/run_ieee_no_replay_baseline.py": "510436a8cbcea9dd8cb61789c5381d83cea1b4791a23577187a3629e5c0c13b6",
+    "scripts/run_ieee_policy_candidates.py": "69d9966ad5ef11eafd059bef3b268f4a4618d7f4b7738d397a796fca5be99264",
+    "src/impact_replay/replay.py": "382ce611892c4050d6babd86a735efc6cd255c76bd8163ebcd19855fc4f10dbf"
+  },
+  "attempts": [
+    {
+      "name": "combined-alpha075",
+      "options": [
+        "--alpha",
+        "0.75"
+      ],
+      "status": "full_passed",
+      "command": [
+        "/Users/jas/Downloads/impact-replay/.venv/bin/python",
+        "/Users/jas/Downloads/impact-replay/scripts/run_ieee_balanced_replay.py",
+        "--policy",
+        "combined",
+        "--output",
+        "/Users/jas/Downloads/impact-replay/results/ieee-policy-study-501/candidates/combined-alpha075",
+        "--alpha",
+        "0.75"
+      ],
+      "smoke": {
+        "returncode": 0,
+        "wall_seconds": 4.042537125060335,
+        "log": "/Users/jas/Downloads/impact-replay/results/ieee-policy-study-501/candidates/combined-alpha075-smoke.log"
+      },
+      "full": {
+        "returncode": 0,
+        "wall_seconds": 10.705679374979809,
+        "log": "/Users/jas/Downloads/impact-replay/results/ieee-policy-study-501/candidates/combined-alpha075-full.log"
+      }
+    },
+    {
+      "name": "combined-mix050",
+      "options": [
+        "--random-fraction",
+        "0.5"
+      ],
+      "status": "full_passed",
+      "command": [
+        "/Users/jas/Downloads/impact-replay/.venv/bin/python",
+        "/Users/jas/Downloads/impact-replay/scripts/run_ieee_balanced_replay.py",
+        "--policy",
+        "combined",
+        "--output",
+        "/Users/jas/Downloads/impact-replay/results/ieee-policy-study-501/candidates/combined-mix050",
+        "--random-fraction",
+        "0.5"
+      ],
+      "smoke": {
+        "returncode": 0,
+        "wall_seconds": 3.87735674995929,
+        "log": "/Users/jas/Downloads/impact-replay/results/ieee-policy-study-501/candidates/combined-mix050-smoke.log"
+      },
+      "full": {
+        "returncode": 0,
+        "wall_seconds": 9.30381854204461,
+        "log": "/Users/jas/Downloads/impact-replay/results/ieee-policy-study-501/candidates/combined-mix050-full.log"
+      }
+    },
+    {
+      "name": "combined-classnorm",
+      "options": [
+        "--score-normalization",
+        "class"
+      ],
+      "status": "full_passed",
+      "command": [
+        "/Users/jas/Downloads/impact-replay/.venv/bin/python",
+        "/Users/jas/Downloads/impact-replay/scripts/run_ieee_balanced_replay.py",
+        "--policy",
+        "combined",
+        "--output",
+        "/Users/jas/Downloads/impact-replay/results/ieee-policy-study-501/candidates/combined-classnorm",
+        "--score-normalization",
+        "class"
+      ],
+      "smoke": {
+        "returncode": 0,
+        "wall_seconds": 3.742648500017822,
+        "log": "/Users/jas/Downloads/impact-replay/results/ieee-policy-study-501/candidates/combined-classnorm-smoke.log"
+      },
+      "full": {
+        "returncode": 0,
+        "wall_seconds": 9.973862416110933,
+        "log": "/Users/jas/Downloads/impact-replay/results/ieee-policy-study-501/candidates/combined-classnorm-full.log"
+      }
+    }
+  ]
+}

@@ -18,7 +18,8 @@ Keep seed 501, six prepared chronological development windows, fitted
 preprocessing (TransactionAmt excluded), imported baseline network, Adam,
 positive weight from window-1 training, three epochs, batch size 256, and the
 same current-data permutation stream. Do not regenerate windows or tune on
-held-out outcomes. Keep the existing no-replay runner unchanged.
+reserved evaluation outcomes. Development held-out metrics may inform only the
+three recorded exploratory candidates; held-out rows never enter scores. Keep the existing no-replay runner unchanged.
 
 Admission remains the original independent class-balanced Algorithm-R process:
 128 slots per class; admit only after completing each window. Selection takes

@@ -1,0 +1,36 @@
+{
+  "final_code_random_checkpoint_equality": {
+    "checkpoint-window-01.pt": true,
+    "checkpoint-window-02.pt": true,
+    "checkpoint-window-03.pt": true,
+    "checkpoint-window-04.pt": true,
+    "checkpoint-window-05.pt": true,
+    "checkpoint-window-06.pt": true
+  },
+  "protected_anchor_sha256": {
+    "results/ieee-no-replay-baseline-501/ap-retention.png": "1fd9cd225ebc0808f4c60c37e94e4094d92109a2cce133cedd63904af78ff9b1",
+    "results/ieee-no-replay-baseline-501/checkpoint-window-01.pt": "7390135042cf76c1b1e32293f6040794dd39bcb2130f44db87cbb3d74b874f2c",
+    "results/ieee-no-replay-baseline-501/checkpoint-window-02.pt": "3805f3b19fc857ab58cdc78162bdc0ca0c633a12e865239562a15123055406c9",
+    "results/ieee-no-replay-baseline-501/checkpoint-window-03.pt": "81f4f37bcaeb8991547cdadfbc873265b2633dac6a08a647d2b2b284c0fe0768",
+    "results/ieee-no-replay-baseline-501/checkpoint-window-04.pt": "d46f2391494984ad49874110a765ac1ee64d2822db3636cf2c035961d4544ab6",
+    "results/ieee-no-replay-baseline-501/checkpoint-window-05.pt": "2a65f013a6da86590f8fa68a308dad2e7a6d36dacbdf92a35970117b8c5b7cf6",
+    "results/ieee-no-replay-baseline-501/checkpoint-window-06.pt": "c7ff4fda67e14f3114a4d92a47e6f5bf2a882df286cfe548430ecbf97340e332",
+    "results/ieee-no-replay-baseline-501/configuration.json": "a083b3ac30718ff5b6895274ad551c243b5b801b556bd1f842a3cee9f88d20c1",
+    "results/ieee-no-replay-baseline-501/results.json": "6ea3ee1d15eb29f05274a0488cdedaef78d1369510894472176c08b498b44054",
+    "results/ieee-no-replay-baseline-501/smoke-check.json": "0ff1a12a2a68e833de26c6e0ad4040764d2026dbd823bf25b1d8ae396511734d",
+    "results/ieee-class-balanced-replay-501/ap-retention-comparison.png": "e92d25af1bf637fbc182f11fa72d48dac83f8654660d132b53913ac1da04cf05",
+    "results/ieee-class-balanced-replay-501/checkpoint-window-01.pt": "7390135042cf76c1b1e32293f6040794dd39bcb2130f44db87cbb3d74b874f2c",
+    "results/ieee-class-balanced-replay-501/checkpoint-window-02.pt": "f67b00ebb1290e5d1d00291f0f924d8d99da22101ea4321445d16ea208242419",
+    "results/ieee-class-balanced-replay-501/checkpoint-window-03.pt": "7f4706fd220a503c8316c19a12e7525f0c68e49aaa544dcc92ceb51f4cfe3ce1",
+    "results/ieee-class-balanced-replay-501/checkpoint-window-04.pt": "ab53c44af9b92531f22f11363c16a3adf18b604fd407b5ab417168826275b261",
+    "results/ieee-class-balanced-replay-501/checkpoint-window-05.pt": "6573675dda5583c622d428ee0931e3864e08d94b616a848ca47952bfeb59add9",
+    "results/ieee-class-balanced-replay-501/checkpoint-window-06.pt": "70448a3a2871d859834a2756ca58d9fb0ca1ab6c72146245086b91db89494d4b",
+    "results/ieee-class-balanced-replay-501/comparison.json": "7f6a5a8aba405c210616dcd09bbc26786a1371b566e315ce4abb4397393dac60",
+    "results/ieee-class-balanced-replay-501/configuration.json": "7a53f264b0437518d47b251e8cc707cce7f09610d1ab0f7e327dafec31e0827c",
+    "results/ieee-class-balanced-replay-501/replay-ids.json": "191ad142bc1860c4574125c95f1224a34c8cbd0281130166ddb11a6476215cfe",
+    "results/ieee-class-balanced-replay-501/results.json": "a8af3f92ecb0901bbb42f5091bbee61b0772486f5ea5f470fcb1ae62fe406c0c",
+    "results/ieee-class-balanced-replay-501/smoke-check.json": "0137006fd60295bebd1ad32c552a6e4ed0f2413e75b9eb9b109c28c77f122c68",
+    "results/ieee-class-balanced-replay-501/verification.json": "c9b0ba07751b02580ffcf75d7b246e5d3759c580251e2f95050004842a49623e"
+  },
+  "current_runner_sha256": "fa342fd6d76a55d470e8a439128f68e74cb7e796045c5605117e5e93aa2a4517"
+}

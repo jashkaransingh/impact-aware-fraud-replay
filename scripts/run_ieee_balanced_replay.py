@@ -9,6 +9,7 @@ import json
 import math
 import random
 import sys
+import time
 from importlib.metadata import version
 from pathlib import Path
 
@@ -43,6 +44,9 @@ class StratifiedReservoir:
         self.retrieval_rng = retrieval_rng
         self.policy = "random"
         self.impact_scale = None
+        self.alpha = .5
+        self.score_normalization = "global"
+        self.random_fraction = 0.
         self.seen = {0: 0, 1: 0}
         self.slots = {0: [], 1: []}
 
@@ -94,9 +98,8 @@ class StratifiedReservoir:
         if self.policy != "random" and candidates:
             losses = (historical_losses(model, candidates) if self.policy != "impact"
                       else np.array([r["reference_loss"] for r in candidates]))
-            values = score(losses - np.array([r["reference_loss"] for r in candidates]),
-                           [r["impact"] for r in candidates], self.policy,
-                           alpha=.5, combination="sum")
+            values = candidate_scores(candidates, losses, self.policy, self.alpha,
+                                      self.score_normalization)
             scores = {r["transaction_id"]: float(v) for r, v in zip(candidates, values)}
         selected = []
         for label in (0, 1):
@@ -106,7 +109,15 @@ class StratifiedReservoir:
             else:
                 order = self.retrieval_rng.sample(pool, len(pool))
                 order.sort(key=lambda r: -scores[r["transaction_id"]])
-                selected.extend(order[:RETRIEVE_PER_CLASS])
+                k = min(RETRIEVE_PER_CLASS, len(pool))
+                random_count = round(k * self.random_fraction)
+                if random_count:
+                    uniform = self.retrieval_rng.sample(pool, random_count)
+                    uniform_ids = {r["transaction_id"] for r in uniform}
+                    priority = [r for r in order if r["transaction_id"] not in uniform_ids]
+                    selected.extend(uniform + priority[:k-random_count])
+                else:
+                    selected.extend(order[:k])
         self.retrieval_rng.shuffle(selected)
         ids = [item["transaction_id"] for item in selected]
         if len(ids) != len(set(ids)) or len(ids) > 2 * RETRIEVE_PER_CLASS:
@@ -131,6 +142,22 @@ class StratifiedReservoir:
                 "slots_by_class": {str(label): [{"transaction_id": item["transaction_id"],
                                                   "source_window": item["source_window"]}
                                                  for item in self.slots[label]] for label in (0, 1)}}
+
+
+def candidate_scores(rows, losses, policy, alpha=.5, normalization="global"):
+    """Use existing replay.score with optional within-class normalization."""
+    delta = np.asarray(losses) - np.array([r["reference_loss"] for r in rows])
+    impact = np.array([r["impact"] for r in rows])
+    if normalization == "global":
+        return score(delta, impact, policy, alpha=alpha, combination="sum")
+    if normalization != "class":
+        raise ValueError(normalization)
+    labels = np.array([r["class"] for r in rows])
+    values = np.zeros(len(rows))
+    for label in (0, 1):
+        mask = labels == label
+        values[mask] = score(delta[mask], impact[mask], policy, alpha=alpha, combination="sum")
+    return values
 
 
 def historical_losses(model, rows):
@@ -163,7 +190,8 @@ def load_held_out_ids(width):
     return ids
 
 
-def smoke_check(width, weight, first_matrix, first_metadata, held_out_ids):
+def smoke_check(width, weight, first_matrix, first_metadata, held_out_ids,
+                policy="random", alpha=.5, normalization="global", random_fraction=0.):
     """Isolated one-batch current step and one-batch replay step; then discard."""
     torch.manual_seed(SEED)
     model = Network(width)
@@ -181,10 +209,15 @@ def smoke_check(width, weight, first_matrix, first_metadata, held_out_ids):
     optimizer.zero_grad(); loss.backward(); optimizer.step()
 
     memory = StratifiedReservoir(random.Random(SEED), random.Random(SEED))
-    memory.admit_window(first_matrix, first_metadata, 1, held_out_ids)
+    memory.policy = policy
+    memory.alpha = alpha
+    memory.score_normalization = normalization
+    memory.random_fraction = random_fraction
+    memory.impact_scale = max(float(np.quantile(np.log1p(first_metadata["TransactionAmt"]), .95)), 1e-6)
+    memory.admit_window(first_matrix, first_metadata, 1, held_out_ids, model=model)
     second_matrix, second_metadata = load_subset(2, "training", width)
     training_ids = {1: set(first_metadata["TransactionID"].astype(int))}
-    replay = memory.retrieve(2, training_ids, held_out_ids)
+    replay = memory.retrieve(2, training_ids, held_out_ids, model=model)
     current_x = dense_batch(second_matrix, indices)
     current_y = torch.from_numpy(second_metadata["isFraud"].to_numpy(dtype=np.float32)[indices])
     replay_x = torch.from_numpy(np.stack([item["features"] for item in replay]))
@@ -356,9 +389,17 @@ def main():
     global OUTPUT
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--policy", choices=POLICIES, default="random")
+    parser.add_argument("--alpha", type=float, default=.5)
+    parser.add_argument("--score-normalization", choices=("global", "class"), default="global")
+    parser.add_argument("--random-fraction", type=float, default=0.)
+    parser.add_argument("--smoke-only", action="store_true")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--verify-existing", action="store_true")
     args = parser.parse_args()
+    if not 0 <= args.alpha <= 1 or not 0 <= args.random_fraction <= 1:
+        parser.error("alpha and random-fraction must be in [0, 1]")
+    if args.policy != "combined" and (args.alpha != .5 or args.random_fraction != 0. or args.score_normalization != "global"):
+        parser.error("Candidate options apply only to combined policy")
     if args.output:
         OUTPUT = args.output.resolve()
     elif args.policy != "random":
@@ -368,7 +409,7 @@ def main():
             raise SystemExit("Refusing to write verification into preserved baseline folders; copy the run and use --output")
         verify_saved_run()
         return
-    if OUTPUT.exists():
+    if OUTPUT.exists() and not args.smoke_only:
         raise FileExistsError(f"Refusing to modify existing output: {OUTPUT}")
     baseline_config = json.loads((BASELINE / "configuration.json").read_text())
     baseline_results = json.loads((BASELINE / "results.json").read_text())
@@ -393,8 +434,12 @@ def main():
     held_out_ids = load_held_out_ids(width)
     torch.set_num_threads(min(4, torch.get_num_threads()))
     torch.use_deterministic_algorithms(True)
-    smoke = smoke_check(width, weight, first_matrix, first_metadata, held_out_ids)
+    smoke = smoke_check(width, weight, first_matrix, first_metadata, held_out_ids,
+                        args.policy, args.alpha, args.score_normalization, args.random_fraction)
     print(f"Replay smoke check passed: {smoke['combined_shape']}, loss {smoke['replay_loss']:.6f}", flush=True)
+
+    if args.smoke_only:
+        return
 
     # Reset after smoke. Current-order generator matches the baseline exactly;
     # admission and retrieval each own a separate independent random stream.
@@ -405,6 +450,9 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
     loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(weight, dtype=torch.float32))
     memory.policy = args.policy
+    memory.alpha = args.alpha
+    memory.score_normalization = args.score_normalization
+    memory.random_fraction = args.random_fraction
     amounts = first_metadata["TransactionAmt"].to_numpy(dtype=float)
     if not np.isfinite(amounts).all() or (amounts < 0).any():
         raise ValueError("Invalid window-1 training amounts")
@@ -412,7 +460,9 @@ def main():
     OUTPUT.mkdir(parents=True, exist_ok=False)
     config = {
         "description": "Development-only class-balanced replay comparison; not tuned",
-        "policy": args.policy, "alpha": .5, "combination": "sum",
+        "policy": args.policy, "alpha": args.alpha, "combination": "sum",
+        "score_normalization": args.score_normalization, "random_fraction": args.random_fraction,
+        "mixture_rule": "Within each class, sample round(k*fraction) uniformly; fill remaining quota by priority excluding uniform IDs",
         "impact_scale": memory.impact_scale,
         "score_rule": "replay.score; unweighted BCE minus frozen post-source-window BCE; fraud-only clipped log1p(amount), window-1 training p95 scale",
         "selection_rule": "Historical reservoir only; rank within class for scored policies; seeded ties; random keeps original sampling",
@@ -440,6 +490,9 @@ def main():
     retrieval_log = []
     memory_log = []
     results = []
+    selection_timings = []
+    admission_timings = []
+    run_start = time.perf_counter()
     for window in range(1, 7):
         matrix, metadata = ((first_matrix, first_metadata) if window == 1
                             else load_subset(window, "training", width))
@@ -452,7 +505,10 @@ def main():
         epoch_losses = []
         epoch_replay_counts = []
         for epoch in range(1, EPOCHS + 1):
+            retrieval_start = time.perf_counter()
             selected = memory.retrieve(window, training_ids_by_window, held_out_ids, model=model)
+            selection_timings.append({'window': window, 'epoch': epoch,
+                                      'seconds': time.perf_counter() - retrieval_start})
             if window == 1 and selected:
                 raise AssertionError("Window 1 unexpectedly retrieved replay")
             permutation = torch.randperm(len(labels), generator=current_rng).numpy()
@@ -488,7 +544,9 @@ def main():
                                                  "class": item["class"],
                                                  "source_window": item["source_window"]}
                                                 for item in selected]})
+        admission_start = time.perf_counter()
         memory.admit_window(matrix, metadata, window, held_out_ids, model=model)
+        admission_timings.append({'window': window, 'seconds': time.perf_counter() - admission_start})
         memory_log.append(memory.snapshot(window))
         del matrix, metadata
         held_out[window] = load_subset(window, "held_out", width)
@@ -506,6 +564,12 @@ def main():
     (OUTPUT / "replay-ids.json").write_text(json.dumps({"retrievals": retrieval_log,
                                                         "memory_snapshots": memory_log}, indent=2) + "\n")
     (OUTPUT / "results.json").write_text(json.dumps(results, indent=2) + "\n")
+    timing = {'training_windows_wall_seconds': time.perf_counter() - run_start,
+              'selection_seconds': sum(r['seconds'] for r in selection_timings),
+              'selection_by_epoch': selection_timings,
+              'admission_seconds': sum(r['seconds'] for r in admission_timings),
+              'note': 'Wall clock, includes I/O and evaluation; separate selection timer includes guard checks, scoring, ranking and shuffle. Not a controlled runtime benchmark.'}
+    (OUTPUT / 'timing.json').write_text(json.dumps(timing, indent=2) + '\n')
     comparison_report = comparison(results, baseline_results)
     (OUTPUT / "comparison.json").write_text(json.dumps(comparison_report, indent=2) + "\n")
     plot_comparison(results, baseline_results)

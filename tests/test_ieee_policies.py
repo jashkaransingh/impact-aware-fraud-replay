@@ -73,6 +73,50 @@ class IEEEPolicies(unittest.TestCase):
             optimizer.zero_grad(); loss.backward(); optimizer.step()
             self.assertTrue(model.training)
 
+    def test_candidate_normalization_and_endpoints(self):
+        rows = [dict(reference_loss=0., impact=v, **{'class': c})
+                for c, v in [(0, 0), (0, 0), (1, .1), (1, .9)]]
+        losses = np.array([100., 200., .1, .2])
+        global_scores = runner.candidate_scores(rows, losses, 'combined')
+        class_scores = runner.candidate_scores(rows, losses, 'combined', normalization='class')
+        self.assertGreater(class_scores[2], global_scores[2])
+        self.assertGreater(class_scores[3], global_scores[3])
+        np.testing.assert_allclose(
+            runner.candidate_scores(rows, losses, 'combined', alpha=1),
+            runner.candidate_scores(rows, losses, 'forgetting'))
+        np.testing.assert_allclose(
+            runner.candidate_scores(rows, losses, 'combined', alpha=0),
+            runner.candidate_scores(rows, losses, 'impact'))
+        with self.assertRaises(ValueError):
+            runner.candidate_scores(rows, losses, 'combined', normalization='invalid')
+
+    def test_mixture_exact_quota_and_no_duplicate_ids(self):
+        memory = self.memory('combined')
+        memory.random_fraction = .5
+        memory.slots = {c: [dict(transaction_id=2*i+c, source_window=1,
+                               features=np.zeros(2, dtype=np.float32),
+                               reference_loss=0., impact=i/80*c, **{'class': c})
+                           for i in range(80)] for c in (0, 1)}
+        model = runner.Network(2)
+        expected = []
+        rng = random.Random(501)
+        rows = sum(memory.slots.values(), [])
+        values = runner.candidate_scores(rows, runner.historical_losses(model, rows), 'combined')
+        values_by_id = {r['transaction_id']: v for r, v in zip(rows, values)}
+        for c in (0, 1):
+            pool = memory.slots[c]
+            ranking = rng.sample(pool, len(pool))
+            ranking.sort(key=lambda r: -values_by_id[r['transaction_id']])
+            uniform = rng.sample(pool, 32)
+            ids = {r['transaction_id'] for r in uniform}
+            priority = [r for r in ranking if r['transaction_id'] not in ids][:32]
+            expected.extend(uniform + priority)
+        rng.shuffle(expected)
+        actual = memory.retrieve(2, {1: set(range(160))}, set(), model=model)
+        self.assertEqual([r['transaction_id'] for r in actual], [r['transaction_id'] for r in expected])
+        self.assertEqual(len({r['transaction_id'] for r in actual}), 128)
+        self.assertEqual(sum(r['class'] for r in actual), 64)
+
     def test_random_compatibility(self):
         memory = self.memory('random')
         memory.slots = {c: [dict(transaction_id=2*i+c, source_window=1, **{'class': c})

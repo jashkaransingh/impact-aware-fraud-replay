@@ -1,0 +1,238 @@
+{
+  "random": {
+    "mean_window_reservoir_coverage_across_3_epochs": 0.87578125,
+    "mean_adjacent_epoch_jaccard": 0.3274680015827955,
+    "selected_fraud_mean_amount": 143.85668541666666,
+    "candidate_fraud_mean_amount": 141.222375,
+    "first_epoch_score_diagnostics": [
+      {
+        "before_window": 2,
+        "positive_delta_p95_all": 0.0,
+        "positive_delta_p95_fraud": 0.0,
+        "positive_delta_p95_legitimate": 0.0,
+        "fraud_zero_forgetting_fraction": 1.0,
+        "fraud_normalized_forgetting_mean": 0.0,
+        "fraud_impact_mean": 0.7529611106076736,
+        "fraud_impact_clipped_fraction": 0.09375
+      },
+      {
+        "before_window": 3,
+        "positive_delta_p95_all": 0.3317602351307869,
+        "positive_delta_p95_fraud": 0.34790529161691597,
+        "positive_delta_p95_legitimate": 0.31054028868675215,
+        "fraud_zero_forgetting_fraction": 0.6640625,
+        "fraud_normalized_forgetting_mean": 0.1377481153300539,
+        "fraud_impact_mean": 0.7422658832634766,
+        "fraud_impact_clipped_fraction": 0.0625
+      },
+      {
+        "before_window": 4,
+        "positive_delta_p95_all": 0.8427211493253708,
+        "positive_delta_p95_fraud": 0.24134966805577265,
+        "positive_delta_p95_legitimate": 1.3499339163303374,
+        "fraud_zero_forgetting_fraction": 0.8046875,
+        "fraud_normalized_forgetting_mean": 0.040277915565375244,
+        "fraud_impact_mean": 0.7522760707685842,
+        "fraud_impact_clipped_fraction": 0.0859375
+      },
+      {
+        "before_window": 5,
+        "positive_delta_p95_all": 1.0396556854248047,
+        "positive_delta_p95_fraud": 0.2329032704234119,
+        "positive_delta_p95_legitimate": 1.5503139317035661,
+        "fraud_zero_forgetting_fraction": 0.765625,
+        "fraud_normalized_forgetting_mean": 0.03008312331235042,
+        "fraud_impact_mean": 0.7277644020237648,
+        "fraud_impact_clipped_fraction": 0.0703125
+      },
+      {
+        "before_window": 6,
+        "positive_delta_p95_all": 1.004432126879692,
+        "positive_delta_p95_fraud": 0.30821940153837196,
+        "positive_delta_p95_legitimate": 1.2807047173380843,
+        "fraud_zero_forgetting_fraction": 0.5703125,
+        "fraud_normalized_forgetting_mean": 0.06683033774804377,
+        "fraud_impact_mean": 0.734320726282423,
+        "fraud_impact_clipped_fraction": 0.0625
+      }
+    ],
+    "note": "Scores reconstructed only at window starts from training-only checkpoints and reservoir rows. Not later-epoch score traces."
+  },
+  "forgetting": {
+    "mean_window_reservoir_coverage_across_3_epochs": 0.70625,
+    "mean_adjacent_epoch_jaccard": 0.626465706304625,
+    "selected_fraud_mean_amount": 156.6523916666667,
+    "candidate_fraud_mean_amount": 141.222375,
+    "first_epoch_score_diagnostics": [
+      {
+        "before_window": 2,
+        "positive_delta_p95_all": 0.0,
+        "positive_delta_p95_fraud": 0.0,
+        "positive_delta_p95_legitimate": 0.0,
+        "fraud_zero_forgetting_fraction": 1.0,
+        "fraud_normalized_forgetting_mean": 0.0,
+        "fraud_impact_mean": 0.7529611106076736,
+        "fraud_impact_clipped_fraction": 0.09375
+      },
+      {
+        "before_window": 3,
+        "positive_delta_p95_all": 0.2739279046654701,
+        "positive_delta_p95_fraud": 0.2818375155329697,
+        "positive_delta_p95_legitimate": 0.23849640190601293,
+        "fraud_zero_forgetting_fraction": 0.671875,
+        "fraud_normalized_forgetting_mean": 0.13994369837347057,
+        "fraud_impact_mean": 0.7422658832634766,
+        "fraud_impact_clipped_fraction": 0.0625
+      },
+      {
+        "before_window": 4,
+        "positive_delta_p95_all": 0.8305721133947372,
+        "positive_delta_p95_fraud": 0.1939566686749458,
+        "positive_delta_p95_legitimate": 1.2181408673524832,
+        "fraud_zero_forgetting_fraction": 0.8203125,
+        "fraud_normalized_forgetting_mean": 0.03430174308007458,
+        "fraud_impact_mean": 0.7522760707685842,
+        "fraud_impact_clipped_fraction": 0.0859375
+      },
+      {
+        "before_window": 5,
+        "positive_delta_p95_all": 0.9794241487979889,
+        "positive_delta_p95_fraud": 0.16734107807278623,
+        "positive_delta_p95_legitimate": 1.4030137598514545,
+        "fraud_zero_forgetting_fraction": 0.7890625,
+        "fraud_normalized_forgetting_mean": 0.02414602428652142,
+        "fraud_impact_mean": 0.7277644020237648,
+        "fraud_impact_clipped_fraction": 0.0703125
+      },
+      {
+        "before_window": 6,
+        "positive_delta_p95_all": 0.87284055352211,
+        "positive_delta_p95_fraud": 0.2736580654978752,
+        "positive_delta_p95_legitimate": 1.172756914794445,
+        "fraud_zero_forgetting_fraction": 0.5625,
+        "fraud_normalized_forgetting_mean": 0.06497233413518139,
+        "fraud_impact_mean": 0.734320726282423,
+        "fraud_impact_clipped_fraction": 0.0625
+      }
+    ],
+    "note": "Scores reconstructed only at window starts from training-only checkpoints and reservoir rows. Not later-epoch score traces."
+  },
+  "impact": {
+    "mean_window_reservoir_coverage_across_3_epochs": 0.68984375,
+    "mean_adjacent_epoch_jaccard": 0.5953800467875666,
+    "selected_fraud_mean_amount": 236.52624999999998,
+    "candidate_fraud_mean_amount": 141.222375,
+    "first_epoch_score_diagnostics": [
+      {
+        "before_window": 2,
+        "positive_delta_p95_all": 0.0,
+        "positive_delta_p95_fraud": 0.0,
+        "positive_delta_p95_legitimate": 0.0,
+        "fraud_zero_forgetting_fraction": 1.0,
+        "fraud_normalized_forgetting_mean": 0.0,
+        "fraud_impact_mean": 0.7529611106076736,
+        "fraud_impact_clipped_fraction": 0.09375
+      },
+      {
+        "before_window": 3,
+        "positive_delta_p95_all": 0.2653985247015953,
+        "positive_delta_p95_fraud": 0.26226875633001273,
+        "positive_delta_p95_legitimate": 0.24201329350471457,
+        "fraud_zero_forgetting_fraction": 0.6484375,
+        "fraud_normalized_forgetting_mean": 0.14571848759823053,
+        "fraud_impact_mean": 0.7422658832634766,
+        "fraud_impact_clipped_fraction": 0.0625
+      },
+      {
+        "before_window": 4,
+        "positive_delta_p95_all": 0.8249379545450211,
+        "positive_delta_p95_fraud": 0.23169412314891802,
+        "positive_delta_p95_legitimate": 1.2007340431213362,
+        "fraud_zero_forgetting_fraction": 0.8125,
+        "fraud_normalized_forgetting_mean": 0.0357439489892394,
+        "fraud_impact_mean": 0.7522760707685842,
+        "fraud_impact_clipped_fraction": 0.0859375
+      },
+      {
+        "before_window": 5,
+        "positive_delta_p95_all": 1.0055430233478546,
+        "positive_delta_p95_fraud": 0.18592212945222844,
+        "positive_delta_p95_legitimate": 1.5367502689361554,
+        "fraud_zero_forgetting_fraction": 0.78125,
+        "fraud_normalized_forgetting_mean": 0.028279450849528053,
+        "fraud_impact_mean": 0.7277644020237648,
+        "fraud_impact_clipped_fraction": 0.0703125
+      },
+      {
+        "before_window": 6,
+        "positive_delta_p95_all": 0.9561766535043716,
+        "positive_delta_p95_fraud": 0.28404733091592776,
+        "positive_delta_p95_legitimate": 1.2125875234603876,
+        "fraud_zero_forgetting_fraction": 0.6171875,
+        "fraud_normalized_forgetting_mean": 0.06412493462959365,
+        "fraud_impact_mean": 0.734320726282423,
+        "fraud_impact_clipped_fraction": 0.0625
+      }
+    ],
+    "note": "Scores reconstructed only at window starts from training-only checkpoints and reservoir rows. Not later-epoch score traces."
+  },
+  "combined": {
+    "mean_window_reservoir_coverage_across_3_epochs": 0.63359375,
+    "mean_adjacent_epoch_jaccard": 0.761676935425502,
+    "selected_fraud_mean_amount": 228.66671562500002,
+    "candidate_fraud_mean_amount": 141.222375,
+    "first_epoch_score_diagnostics": [
+      {
+        "before_window": 2,
+        "positive_delta_p95_all": 0.0,
+        "positive_delta_p95_fraud": 0.0,
+        "positive_delta_p95_legitimate": 0.0,
+        "fraud_zero_forgetting_fraction": 1.0,
+        "fraud_normalized_forgetting_mean": 0.0,
+        "fraud_impact_mean": 0.7529611106076736,
+        "fraud_impact_clipped_fraction": 0.09375
+      },
+      {
+        "before_window": 3,
+        "positive_delta_p95_all": 0.2548191323876381,
+        "positive_delta_p95_fraud": 0.25633825212717004,
+        "positive_delta_p95_legitimate": 0.2359564304351804,
+        "fraud_zero_forgetting_fraction": 0.6484375,
+        "fraud_normalized_forgetting_mean": 0.14543287345058636,
+        "fraud_impact_mean": 0.7422658832634766,
+        "fraud_impact_clipped_fraction": 0.0625
+      },
+      {
+        "before_window": 4,
+        "positive_delta_p95_all": 0.8726495802402496,
+        "positive_delta_p95_fraud": 0.19714771360158898,
+        "positive_delta_p95_legitimate": 1.2175294250249842,
+        "fraud_zero_forgetting_fraction": 0.8046875,
+        "fraud_normalized_forgetting_mean": 0.032911599762664764,
+        "fraud_impact_mean": 0.7522760707685842,
+        "fraud_impact_clipped_fraction": 0.0859375
+      },
+      {
+        "before_window": 5,
+        "positive_delta_p95_all": 0.985551655292511,
+        "positive_delta_p95_fraud": 0.14842523634433716,
+        "positive_delta_p95_legitimate": 1.4303749799728378,
+        "fraud_zero_forgetting_fraction": 0.78125,
+        "fraud_normalized_forgetting_mean": 0.025881867272960313,
+        "fraud_impact_mean": 0.7277644020237648,
+        "fraud_impact_clipped_fraction": 0.0703125
+      },
+      {
+        "before_window": 6,
+        "positive_delta_p95_all": 0.8960236757993698,
+        "positive_delta_p95_fraud": 0.2668635711073875,
+        "positive_delta_p95_legitimate": 1.1639171585440633,
+        "fraud_zero_forgetting_fraction": 0.6015625,
+        "fraud_normalized_forgetting_mean": 0.064884173341938,
+        "fraud_impact_mean": 0.734320726282423,
+        "fraud_impact_clipped_fraction": 0.0625
+      }
+    ],
+    "note": "Scores reconstructed only at window starts from training-only checkpoints and reservoir rows. Not later-epoch score traces."
+  }
+}
