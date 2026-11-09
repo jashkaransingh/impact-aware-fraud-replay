@@ -1,9 +1,10 @@
-"""One fixed, development-only, class-balanced random-replay comparison.
+"""Fixed development-only class-balanced replay with interchangeable selection.
 
-Run: .venv/bin/python scripts/run_ieee_balanced_replay.py
+Run: .venv/bin/python scripts/run_ieee_balanced_replay.py --policy combined --output NEW_DIR
 Uses the baseline model and evaluation code, and reads prepared development sets only.
 """
 
+import argparse
 import json
 import math
 import random
@@ -24,6 +25,10 @@ from run_ieee_no_replay_baseline import (ROOT, INPUT, SEED, BATCH_SIZE, EPOCHS,
                                          evaluate, load_subset)
 
 
+sys.path.insert(0, str(ROOT / "src"))
+from impact_replay.replay import POLICIES, score
+
+
 BASELINE = ROOT / "results/ieee-no-replay-baseline-501"
 OUTPUT = ROOT / "results/ieee-class-balanced-replay-501"
 SLOTS_PER_CLASS = 128
@@ -36,10 +41,12 @@ class StratifiedReservoir:
     def __init__(self, admission_rng, retrieval_rng):
         self.admission_rng = admission_rng
         self.retrieval_rng = retrieval_rng
+        self.policy = "random"
+        self.impact_scale = None
         self.seen = {0: 0, 1: 0}
         self.slots = {0: [], 1: []}
 
-    def admit_window(self, matrix, metadata, window, held_out_ids):
+    def admit_window(self, matrix, metadata, window, held_out_ids, model=None):
         for index, row in metadata.iterrows():
             label = int(row["isFraud"])
             transaction_id = int(row["TransactionID"])
@@ -58,12 +65,48 @@ class StratifiedReservoir:
                 else:
                     pool[position] = example
         self.check_limits()
+        if model is not None:
+            # Only retained rows need references, measured after source training.
+            fresh = [r for pool in self.slots.values() for r in pool
+                     if r["source_window"] == window]
+            losses = historical_losses(model, fresh)
+            amounts = dict(zip(metadata["TransactionID"].astype(int),
+                               metadata["TransactionAmt"].astype(float)))
+            for item, loss in zip(fresh, losses):
+                item["reference_loss"] = float(loss)
+                amount = amounts[item["transaction_id"]]
+                if not math.isfinite(amount) or amount < 0:
+                    raise ValueError("Invalid training amount")
+                item["impact"] = (float(np.clip(np.log1p(amount) / self.impact_scale, 0, 1))
+                                  * item["class"])
 
-    def retrieve(self, current_window, training_ids_by_window, held_out_ids):
+    def retrieve(self, current_window, training_ids_by_window, held_out_ids, model=None):
+        if self.policy not in POLICIES:
+            raise ValueError(self.policy)
+        # Validate the entire candidate pool before computing any scores.
+        candidates = [r for pool in self.slots.values() for r in pool]
+        for item in candidates:
+            if (item["source_window"] >= current_window
+                    or item["transaction_id"] not in training_ids_by_window.get(item["source_window"], set())
+                    or item["transaction_id"] in held_out_ids):
+                raise AssertionError("Scoring candidate is not historical training data")
+        scores = {}
+        if self.policy != "random" and candidates:
+            losses = (historical_losses(model, candidates) if self.policy != "impact"
+                      else np.array([r["reference_loss"] for r in candidates]))
+            values = score(losses - np.array([r["reference_loss"] for r in candidates]),
+                           [r["impact"] for r in candidates], self.policy,
+                           alpha=.5, combination="sum")
+            scores = {r["transaction_id"]: float(v) for r, v in zip(candidates, values)}
         selected = []
         for label in (0, 1):
             pool = self.slots[label]
-            selected.extend(self.retrieval_rng.sample(pool, min(RETRIEVE_PER_CLASS, len(pool))))
+            if self.policy == "random":
+                selected.extend(self.retrieval_rng.sample(pool, min(RETRIEVE_PER_CLASS, len(pool))))
+            else:
+                order = self.retrieval_rng.sample(pool, len(pool))
+                order.sort(key=lambda r: -scores[r["transaction_id"]])
+                selected.extend(order[:RETRIEVE_PER_CLASS])
         self.retrieval_rng.shuffle(selected)
         ids = [item["transaction_id"] for item in selected]
         if len(ids) != len(set(ids)) or len(ids) > 2 * RETRIEVE_PER_CLASS:
@@ -88,6 +131,25 @@ class StratifiedReservoir:
                 "slots_by_class": {str(label): [{"transaction_id": item["transaction_id"],
                                                   "source_window": item["source_window"]}
                                                  for item in self.slots[label]] for label in (0, 1)}}
+
+
+def historical_losses(model, rows):
+    """Unweighted BCE for bounded historical memory; no gradient or RNG changes."""
+    if not rows:
+        return np.array([], dtype=np.float32)
+    was_training = model.training
+    model.eval()
+    try:
+        with torch.no_grad():
+            features = torch.from_numpy(np.stack([r["features"] for r in rows]))
+            labels = torch.tensor([r["class"] for r in rows], dtype=torch.float32)
+            losses = nn.functional.binary_cross_entropy_with_logits(
+                model(features), labels, reduction="none").numpy()
+        if not np.isfinite(losses).all():
+            raise AssertionError("Nonfinite historical losses")
+        return losses
+    finally:
+        model.train(was_training)
 
 
 def load_held_out_ids(width):
@@ -186,7 +248,7 @@ def plot_comparison(replay_results, baseline_results):
     fig, axes = plt.subplots(2, 3, figsize=(13, 7), sharey=True)
     for window, ax in enumerate(axes.flat, 1):
         for results, label, color in ((baseline_results, "No replay", "#3578b5"),
-                                      (replay_results, "Balanced replay", "#d56a28")):
+                                      (replay_results, "Replay policy", "#d56a28")):
             points = [(step["after_training_window"], metric["ap"])
                       for step in results for metric in step["held_out_evaluations"]
                       if metric["held_out_window"] == window]
@@ -200,7 +262,7 @@ def plot_comparison(replay_results, baseline_results):
         if window in (1, 4):
             ax.set_ylabel("Average precision")
     axes[0, 0].legend(fontsize=8)
-    fig.suptitle("Development AP retention: no replay vs balanced random replay")
+    fig.suptitle("Development AP retention: no replay vs configured replay policy")
     fig.tight_layout()
     fig.savefig(OUTPUT / "ap-retention-comparison.png", dpi=160)
     plt.close(fig)
@@ -291,14 +353,33 @@ def verify_saved_run():
 
 
 def main():
-    if len(sys.argv) == 2 and sys.argv[1] == "--verify-existing":
+    global OUTPUT
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--policy", choices=POLICIES, default="random")
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--verify-existing", action="store_true")
+    args = parser.parse_args()
+    if args.output:
+        OUTPUT = args.output.resolve()
+    elif args.policy != "random":
+        OUTPUT = ROOT / f"results/ieee-class-balanced-{args.policy}-501"
+    if args.verify_existing:
+        if OUTPUT.resolve() in {BASELINE.resolve(), (ROOT / "results/ieee-class-balanced-replay-501").resolve()}:
+            raise SystemExit("Refusing to write verification into preserved baseline folders; copy the run and use --output")
         verify_saved_run()
         return
-    if len(sys.argv) != 1:
-        raise SystemExit("Usage: run_ieee_balanced_replay.py [--verify-existing]")
+    if OUTPUT.exists():
+        raise FileExistsError(f"Refusing to modify existing output: {OUTPUT}")
     baseline_config = json.loads((BASELINE / "configuration.json").read_text())
     baseline_results = json.loads((BASELINE / "results.json").read_text())
     prepared = json.loads((INPUT / "verification.json").read_text())
+    if (prepared["source_sha256_from_preparation"] != baseline_config["source_preparation_sha256"]
+            or "TransactionAmt" not in prepared["predictors"]["excluded_from_model_inputs"]
+            or any("TransactionAmt" in prepared["predictors"][kind] for kind in ("numeric", "categorical"))
+            or not all(prepared["verification"][key] for key in (
+                "development_rows_assigned_once", "training_and_held_out_ids_disjoint",
+                "both_classes_in_each_subset"))):
+        raise ValueError("Preparation provenance, feature exclusion, or split checks failed")
     width = prepared["preprocessing"]["feature_count"]
     first_matrix, first_metadata = load_subset(1, "training", width)
     first_labels = first_metadata["isFraud"].to_numpy(dtype=np.int8)
@@ -323,9 +404,19 @@ def main():
     model = Network(width).cpu()
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
     loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(weight, dtype=torch.float32))
-    OUTPUT.mkdir(parents=True, exist_ok=True)
+    memory.policy = args.policy
+    amounts = first_metadata["TransactionAmt"].to_numpy(dtype=float)
+    if not np.isfinite(amounts).all() or (amounts < 0).any():
+        raise ValueError("Invalid window-1 training amounts")
+    memory.impact_scale = max(float(np.quantile(np.log1p(amounts), .95)), 1e-6)
+    OUTPUT.mkdir(parents=True, exist_ok=False)
     config = {
-        "description": "One initial development-only class-balanced random-replay comparison; not tuned",
+        "description": "Development-only class-balanced replay comparison; not tuned",
+        "policy": args.policy, "alpha": .5, "combination": "sum",
+        "impact_scale": memory.impact_scale,
+        "score_rule": "replay.score; unweighted BCE minus frozen post-source-window BCE; fraud-only clipped log1p(amount), window-1 training p95 scale",
+        "selection_rule": "Historical reservoir only; rank within class for scored policies; seeded ties; random keeps original sampling",
+
         "baseline_configuration": str((BASELINE / "configuration.json").relative_to(ROOT)),
         "prepared_windows": str((INPUT / "verification.json").relative_to(ROOT)),
         "source_sha256_from_preparation": prepared["source_sha256_from_preparation"],
@@ -334,7 +425,7 @@ def main():
         "device": "cpu", "batch_size_current_examples": BATCH_SIZE,
         "epochs_per_window": EPOCHS, "learning_rate": LEARNING_RATE,
         "memory_rule": "Independent classwise algorithm-R reservoirs, 128 slots per class; admit current-window training rows in source order only after that window finishes training; never admit held-out rows",
-        "retrieval_rule": "Before each later epoch, uniformly sample without replacement min(64, available) from each class, then shuffle and distribute round-robin across existing current-data batches. No oversampling or backfilling when a class has fewer than 64 examples; total can be under 128. Each retrieved ID appears at most once per epoch.",
+        "retrieval_rule": "Before each later epoch, select by configured policy without replacement min(64, available) from each class, then shuffle and distribute round-robin across existing current-data batches. No oversampling or backfilling when a class has fewer than 64 examples; total can be under 128. Each retrieved ID appears at most once per epoch.",
         "batch_rule": "Append replay examples to existing batches. Keep exactly the baseline's number of current examples, current order, and optimizer steps; combined batch can exceed 256.",
         "random_generators": {"current_order": "torch.Generator seed 501, matching baseline",
                               "memory_admission": "independent random.Random seed 501",
@@ -361,7 +452,7 @@ def main():
         epoch_losses = []
         epoch_replay_counts = []
         for epoch in range(1, EPOCHS + 1):
-            selected = memory.retrieve(window, training_ids_by_window, held_out_ids)
+            selected = memory.retrieve(window, training_ids_by_window, held_out_ids, model=model)
             if window == 1 and selected:
                 raise AssertionError("Window 1 unexpectedly retrieved replay")
             permutation = torch.randperm(len(labels), generator=current_rng).numpy()
@@ -397,7 +488,7 @@ def main():
                                                  "class": item["class"],
                                                  "source_window": item["source_window"]}
                                                 for item in selected]})
-        memory.admit_window(matrix, metadata, window, held_out_ids)
+        memory.admit_window(matrix, metadata, window, held_out_ids, model=model)
         memory_log.append(memory.snapshot(window))
         del matrix, metadata
         held_out[window] = load_subset(window, "held_out", width)
