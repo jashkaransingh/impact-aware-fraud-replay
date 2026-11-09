@@ -1,6 +1,10 @@
-# Impact-aware fraud replay
+# Impact-Aware Fraud Replay
 
 Research code for bounded replay in sequential fraud classification. The replay experiments compare no replay, random replay, forgetting-based selection, amount-based selection, and a combined score. Transaction amount is an evaluation and selection proxy, not a measured financial loss.
+
+## Quick links
+
+[POCL implementation](upstream/POCL/) · [Scripts](scripts/) · [Configurations](configs/) · [Results](summaries/)
 
 ## Code and attribution
 
