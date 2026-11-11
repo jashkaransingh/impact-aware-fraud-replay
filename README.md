@@ -4,7 +4,7 @@ Research code for bounded replay in sequential fraud classification. The replay 
 
 ## Quick links
 
-[POCL implementation](upstream/POCL/) · [Scripts](scripts/) · [Configurations](configs/) · [Results](summaries/)
+[POCL implementation](upstream/POCL/) · [Scripts](scripts/) · [Configurations](configs/) · [Results](summaries/) · [IEEE-CIS final closeout](docs/ieee-final-results.md)
 
 ## Code and attribution
 
@@ -16,7 +16,7 @@ The root `LICENSE` and the licenses inside both `upstream/` directories contain 
 
 ## Data
 
-Data is not distributed here. For POCL, obtain `claims.csv` and `bene.csv` from the [upstream POCL dataset](https://github.com/finint/POCL/tree/main/dataset) and place them in `upstream/POCL/dataset/`. The Handbook data are generated locally by `scripts/make_handbook.py` from the included simulator. For the IEEE-CIS development experiment, obtain `train_transaction.csv` through the [Kaggle competition data page](https://www.kaggle.com/competitions/ieee-fraud-detection/data) under its access terms and place it in `data/ieee-cis/`. Do not publish the downloaded CSV or generated feature matrices.
+Data is not distributed here. For POCL, obtain `claims.csv` and `bene.csv` from the [upstream POCL dataset](https://github.com/finint/POCL/tree/main/dataset) and place them in `upstream/POCL/dataset/`. The Handbook data are generated locally by `scripts/make_handbook.py` from the included simulator. For independent IEEE-CIS reproduction, obtain `train_transaction.csv` through the [Kaggle competition data page](https://www.kaggle.com/competitions/ieee-fraud-detection/data) under its access terms and place it in `data/ieee-cis/`. Do not publish the downloaded CSV or generated feature matrices.
 
 ## Setup and runs
 
@@ -30,7 +30,7 @@ export PYTHONPATH=src
 python -m unittest discover -s tests -v
 ```
 
-The commands below write to ignored local directories. Choose unused output paths; the runners reject existing ones.
+The commands below write to ignored local directories. Use unused paths. IEEE-CIS experimental coding and one-time final evaluation are complete; use read-only audits for the completed local study. Legacy preparation/baseline scripts can overwrite their default outputs and should not be rerun over verified artifacts.
 
 ```bash
 # Handbook simulation and one configurable replay suite
@@ -42,11 +42,10 @@ python -m impact_replay.controlled --config configs/controlled-validation.json -
 python scripts/run_controlled_test.py
 python scripts/verify_controlled.py --prefix test
 
-# IEEE-CIS development-only preparation and fixed baseline comparison
-python scripts/prepare_ieee_cis.py
-python scripts/prepare_ieee_windows.py
-python scripts/run_ieee_no_replay_baseline.py
-python scripts/run_ieee_balanced_replay.py
+# IEEE-CIS closeout: audit saved artifacts and regenerate paper outputs only.
+# Requires the existing local dataset/checkpoints/predictions; no inference.
+export MPLCONFIGDIR=/tmp/impact-mpl XDG_CACHE_HOME=/tmp/impact-cache
+python scripts/report_ieee_reserved.py --contract results/ieee-final-contract-v1/contract.json --validation results/ieee-final-validation-v1/receipt.json --reserved results/ieee-final-reserved-v1 --prior-manifest results/ieee-reserved-report-v1/prior-artifacts-sha256.json --output results/new-reserved-audit
 ```
 
 To run preserved POCL, first preprocess its raw CSVs using the upstream code's expected `Dataset` path, then run the wrapper from the project root:
@@ -67,8 +66,12 @@ The small files in `summaries/` were calculated from existing local outputs afte
 
 The released POCL code's full schedule produced mean daily AUC 0.816527, F1 0.647858, and accuracy 0.772836 across 350 online days; a same-seed rerun matched daily metrics. This is a run of released code, not an exact numerical replication of the paper. The separately corrected variant changed several behaviors together and is not an ablation.
 
-On IEEE-CIS development data, one fixed-seed class-balanced random-replay comparison had mean final AP 0.192821 over five historical held-out windows, versus 0.189670 without replay. The sixth window AP was 0.184765 versus 0.185013. This is preliminary and does not test impact-aware selection. The chronological validation and reserved evaluation partitions were not used in this comparison.
+IEEE-CIS experimental coding is **COMPLETE**: five fixed methods and training seeds 501–505 were evaluated on development, then frozen models scored the chronological validation and explicitly authorized one-time reserved partition. No validation/reserved retraining, preprocessing refit, calibration or tuning occurred. All 25 reserved prediction files and metrics passed independent audits; the full source SHA and frozen artifact hashes match. All 39 tests pass.
+
+On 104,637 reserved transactions, no replay has the highest observed means: AP **0.145288 ± 0.004241**, fraud recall at 5% **0.275014 ± 0.018053**, amount-weighted fraud recall **0.150775 ± 0.012569** (mean ± sample SD across five training seeds). Class-normalized minus original combined amount recall is **−0.008584**, paired exploratory 95% interval **[−0.030399, +0.013232]**. The primary improvement hypothesis is unsupported. Original combined has higher descriptive means than random replay, but neither exceeds no replay; this does not establish population superiority.
+
+See the [complete final table and paired differences](summaries/ieee-reserved-v1/comparison.md), [final figures](summaries/ieee-reserved-v1/), [audit/provenance](summaries/ieee-reserved-v1/verification-and-results.json), and [final protocol, interpretation and reproducibility notes](docs/ieee-final-results.md). Earlier [development](docs/ieee-multiseed-results.md) and [validation](docs/ieee-validation-results.md) findings remain preserved. All restricted data, transaction-level arrays and checkpoints stay local. No further experiments or tuning are part of this closeout.
 
 ## Limits
 
-The controlled contexts are synthetic. The Handbook simulator has amount-dependent fraud rules. IEEE-CIS uses a limited initial feature set and one development seed; validation and reserved evaluation results are absent. Amount-weighted recall uses transaction amount as a proxy and cannot establish recovered money. Replay budgets, labels, and immediate feedback assumptions do not model an operational fraud system. No training-resume command or clean-environment rebuild has been verified.
+The controlled contexts are synthetic. The Handbook simulator has amount-dependent fraud rules. IEEE-CIS uses a limited feature set, five training seeds and one fixed chronological split. Seed variation does not measure uncertainty over future temporal populations, and the final models are frozen rather than online-adapting. Amount-weighted recall uses transaction amount as a proxy and cannot establish recovered money. Replay budgets, labels, and immediate feedback assumptions do not model an operational fraud system. No training-resume command or clean-environment rebuild has been verified.
